@@ -2,17 +2,26 @@
 
 Agent prompt definitions for Claude persona adoption. Store agent expertise here, invoke from any Claude project.
 
-## Usage
+## Quick Start
 
-In any Claude conversation:
-> "Fetch the `frontend/ui-component` agent from my AIAgents repo and adopt that persona"
+**Ask Nora** — the orchestrator that analyzes your task and chains the right agents:
+> "Ask Nora to build a positions table with sorting and live updates"
 
-Claude reads the prompt via GithubMCP and becomes that specialist.
+Or invoke a specific agent:
+> "Fetch `frontend/ui-component` from AIAgents and adopt that persona"
+
+## Aliases
+
+| Alias | Agent | Purpose |
+|-------|-------|---------|
+| `ask Nora` | `system/orchestrator` | Analyzes tasks, selects & chains agents |
 
 ## Structure
 
 ```
 AIAgents/
+├── system/
+│   └── orchestrator.md      — Nora: meta-agent that chains others
 ├── frontend/
 │   ├── ui-component.md      — SolidJS + Kobalte + Tailwind
 │   ├── api-backend.md       — Node.js + Fastify
@@ -33,3 +42,4 @@ These agents run within your Claude Max subscription. Claude reads the prompt an
 1. Create `category/agent-name.md`
 2. Define: Identity, Stack, Patterns, Process, Output format
 3. Commit to main
+4. (Optional) Add alias to this README
