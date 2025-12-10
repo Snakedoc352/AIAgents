@@ -4,8 +4,8 @@ Agent prompt definitions for Claude persona adoption. Store agent expertise here
 
 ## Quick Start
 
-**Ask Nora** — the orchestrator that analyzes your task and chains the right agents:
-> "Ask Nora to build a positions table with sorting and live updates"
+**Ask the frontend team** — the orchestrator that analyzes your task and chains the right agents:
+> "Ask frontend team to build a positions table with sorting and live updates"
 
 Or invoke a specific agent:
 > "Fetch `frontend/ui-component` from AIAgents and adopt that persona"
@@ -14,14 +14,14 @@ Or invoke a specific agent:
 
 | Alias | Agent | Purpose |
 |-------|-------|---------|
-| `ask Nora` | `system/orchestrator` | Analyzes tasks, selects & chains agents |
+| `ask frontend team` | `system/orchestrator` | Analyzes tasks, selects & chains agents |
 
 ## Structure
 
 ```
 AIAgents/
 ├── system/
-│   └── orchestrator.md      — Nora: meta-agent that chains others
+│   └── orchestrator.md      — Frontend Team: meta-agent that chains others
 ├── frontend/
 │   ├── ui-component.md      — SolidJS + Kobalte + Tailwind
 │   ├── api-backend.md       — Node.js + Fastify
