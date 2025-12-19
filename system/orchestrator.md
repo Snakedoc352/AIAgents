@@ -367,6 +367,14 @@ Weekly review:
 | `/security` | RLS, JWT/OAuth, RBAC, encryption, headers, rate limiting, OWASP, **secrets management**, **incident response**, **compliance (GDPR/SOC2)**, **security audit automation** |
 | `/debugger` | Build failures, runtime errors, network debugging, 5 Whys, **memory profiling**, **CPU profiling**, **distributed tracing**, **chaos engineering** |
 
+### Quality Layer
+| Agent | Key Capabilities |
+|-------|------------------|
+| `/test-automation` | Test strategy (pyramid), Vitest, component testing, Playwright E2E, MSW mocking, CI integration, fixtures |
+| `/code-review` | Review checklists, anti-pattern detection, OWASP review, PR workflow, automated checks (ESLint, Semgrep) |
+| `/cache-layer` | Redis patterns (cache-aside, SWR), HTTP caching (ETags, Vary), invalidation strategies, cache warming |
+| `/migration-specialist` | Zero-downtime migrations, expand-contract pattern, rollback procedures, lock monitoring |
+
 ### Routing by Capability
 
 ```
@@ -379,6 +387,10 @@ blue-green, canary, feature flag    → /deployment
 cost, anomaly, synthetic tests      → /monitor
 secrets, incident, compliance       → /security
 memory leak, CPU, chaos, tracing    → /debugger
+test, e2e, playwright, vitest       → /test-automation
+review, lint, anti-pattern, PR      → /code-review
+cache, redis, invalidation, etag    → /cache-layer
+migration, zero-downtime, rollback  → /migration-specialist
 ```
 
 ### New Capability Signals
@@ -410,3 +422,15 @@ memory leak, CPU, chaos, tracing    → /debugger
 | "slow function", "flame graph" | `/debugger` | CPU profiling |
 | "request flow", "span" | `/debugger` | Distributed tracing |
 | "failure injection", "gameday" | `/debugger` | Chaos engineering |
+| "test pyramid", "unit test" | `/test-automation` | Test strategy design |
+| "e2e", "playwright", "browser test" | `/test-automation` | E2E testing |
+| "msw", "mock api" | `/test-automation` | API mocking |
+| "review checklist", "PR review" | `/code-review` | Review workflow |
+| "anti-pattern", "code smell" | `/code-review` | Anti-pattern detection |
+| "eslint", "semgrep", "lint" | `/code-review` | Automated checks |
+| "cache", "redis", "memcached" | `/cache-layer` | Cache strategy |
+| "invalidate", "cache bust" | `/cache-layer` | Cache invalidation |
+| "etag", "cache-control" | `/cache-layer` | HTTP caching |
+| "zero-downtime", "online migration" | `/migration-specialist` | Safe migrations |
+| "expand-contract", "add then migrate" | `/migration-specialist` | Schema evolution |
+| "lock timeout", "long transaction" | `/migration-specialist` | Lock safety |

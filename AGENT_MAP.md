@@ -173,10 +173,79 @@
 
 | Core Skills |
 |-------------|
-| Event handling & windowing |
-| Rolling aggregations (VWAP, OHLC) |
-| Market data normalization |
-| Live P&L & Greeks calculations |
+| Event stream architecture & bus |
+| Time-series windowing (tumbling, sliding, session) |
+| Rolling aggregations (VWAP, OHLC, SMA, EMA) |
+| Bollinger Bands & technical indicators |
+| Market data normalization (quotes, options) |
+| Live P&L calculations |
+| Greeks aggregation (portfolio-level) |
+| Data buffering (ring buffer) |
+| IndexedDB persistence |
+| Web Worker processing |
+
+---
+
+### Quality Layer
+
+#### `/test-automation`
+**Domain:** Testing strategies, E2E, unit, integration
+
+| Core Skills |
+|-------------|
+| Test strategy design (pyramid) |
+| Unit testing (Vitest) |
+| Component testing (SolidJS Testing Library) |
+| Hook testing patterns |
+| API testing (Supertest) |
+| Contract testing (JSON Schema) |
+| E2E testing (Playwright) |
+| Page Object Model |
+| Mocking (MSW) |
+| CI integration (GitHub Actions) |
+| Fixtures & factories |
+
+#### `/code-review`
+**Domain:** Code quality, PR reviews, automated checks
+
+| Core Skills |
+|-------------|
+| Review checklists (quick & comprehensive) |
+| Anti-pattern detection (TS, React, SQL, Security) |
+| Performance review patterns |
+| Security review (OWASP) |
+| PR review workflow |
+| Automated checks (ESLint, Semgrep) |
+| Pre-commit hooks |
+| Review comment templates |
+
+#### `/cache-layer`
+**Domain:** Redis, in-memory, HTTP caching
+
+| Core Skills |
+|-------------|
+| Cache strategy design |
+| Redis patterns (cache-aside, SWR) |
+| Redis data structures (hash, sorted set, list) |
+| In-memory caching (LRU, TTL) |
+| HTTP caching (Cache-Control, ETags, Vary) |
+| Cache invalidation strategies |
+| Cache warming (startup, predictive) |
+| Cache monitoring & metrics |
+
+#### `/migration-specialist`
+**Domain:** Database migrations, schema evolution
+
+| Core Skills |
+|-------------|
+| Migration planning & risk assessment |
+| Zero-downtime migrations |
+| Expand-contract pattern |
+| Batch data processing |
+| Rollback procedures |
+| Lock monitoring & safety |
+| Schema evolution patterns |
+| Migration testing |
 
 ---
 
@@ -315,7 +384,11 @@
 | `/api-backend` | Fastify/Node | 9 |
 | `/edge-functions` | Deno/Supabase | 5 |
 | `/websocket` | Realtime | 9 |
-| `/data-streams` | Data processing | 4 |
+| `/data-streams` | Data processing | 10 |
+| `/test-automation` | Testing | 11 |
+| `/code-review` | Code quality | 8 |
+| `/cache-layer` | Caching | 8 |
+| `/migration-specialist` | DB migrations | 8 |
 | `/ui-component` | SolidJS/UI | 15 |
 | `/data-integration` | State/fetching | 8 |
 | `/build-tooling` | Vite/bundling | 6 |
@@ -323,7 +396,7 @@
 | `/monitor` | Observability | 10 |
 | `/security` | Auth/security | 11 |
 | `/debugger` | Troubleshooting | 10 |
-| **Total** | **18 agents** | **145** |
+| **Total** | **22 agents** | **186** |
 
 ---
 
