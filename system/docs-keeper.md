@@ -48,6 +48,132 @@ project-root/
 
 ---
 
+## Document Lifecycle Management
+
+**Before ANY write operation, docs-keeper MUST:**
+
+### 1. Check Document Existence
+
+```
+For each target document:
+├─ Exists? → Proceed to write/append
+└─ Missing? → Create with template (see below)
+```
+
+### 2. Auto-Create Missing Documents
+
+| Document | Auto-create trigger | Template |
+|----------|---------------------|----------|
+| `CHANGELOG.md` | First changelog entry | Keep a Changelog header + Unreleased section |
+| `VERSION` | First version bump | `0.1.0` |
+| `README.md` | Project init | Project name + description placeholder |
+| `docs/ADR/` | First ADR | Create directory + ADR-000 template |
+| `docs/ROLLBACK_POINTS.md` | First rollback point | Header + table structure |
+| `docs/RUNBOOK.md` | First procedure | Header + section placeholders |
+| `.docs-keeper.json` | Project init | Full config with defaults |
+
+### 3. Pre-Write Validation
+
+```
+Before writing:
+1. Check file exists (create if not)
+2. Check file is valid format (warn if corrupted)
+3. Check write permissions
+4. Backup current state (for rollback)
+5. Write changes
+6. Validate result
+```
+
+### 4. Template Population
+
+**CHANGELOG.md (if missing):**
+```markdown
+# Changelog
+
+All notable changes documented here.
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+
+## [Unreleased]
+```
+
+**VERSION (if missing):**
+```
+0.1.0
+```
+
+**docs/ADR/000-record-architecture-decisions.md (if missing):**
+```markdown
+# ADR-000: Record Architecture Decisions
+
+## Status
+Accepted
+
+## Context
+We need to record significant architectural decisions.
+
+## Decision
+We will use Architecture Decision Records (ADRs).
+
+## Consequences
+- Decisions are documented with context
+- Future team members understand reasoning
+- Changes to decisions are tracked
+```
+
+**.docs-keeper.json (if missing):**
+```json
+{
+  "version": "0.1.0",
+  "project": "<project-name>",
+  "type": "<project-type>",
+  "created": "<timestamp>",
+  "documents": {
+    "changelog": "CHANGELOG.md",
+    "version": "VERSION",
+    "adr": "docs/ADR/",
+    "rollback": "docs/ROLLBACK_POINTS.md",
+    "runbook": "docs/RUNBOOK.md"
+  },
+  "rollbackPoints": []
+}
+```
+
+### 5. Directory Creation
+
+```
+If target path includes directories that don't exist:
+├─ Create parent directories recursively
+└─ Then create/write file
+```
+
+### 6. Integrity Checks
+
+**On every docs-keeper invocation:**
+
+```
+1. Scan for required documents
+2. Report missing documents
+3. Offer to create missing with templates
+4. Validate existing document formats
+5. Warn on format issues
+```
+
+**Status report format:**
+```
+📋 Document Status
+
+✅ CHANGELOG.md — exists, valid
+✅ VERSION — exists, valid (1.2.0)
+✅ docs/ADR/ — exists, 5 records
+⚠️  docs/ROLLBACK_POINTS.md — exists, outdated (last: v1.0.0)
+❌ docs/RUNBOOK.md — MISSING
+
+Action: Create docs/RUNBOOK.md? [Y/n]
+```
+
+---
+
 ## Documents
 
 ### CHANGELOG.md
@@ -431,14 +557,50 @@ gh release create v1.2.0 \
 
 | Command | Action |
 |---------|--------|
-| `/docs-keeper init` | Initialize project docs |
+| `/docs-keeper init` | Initialize project docs (creates all required files) |
+| `/docs-keeper status` | Check document existence, validity, report missing |
+| `/docs-keeper fix` | Auto-create missing documents with templates |
 | `/docs-keeper changelog` | Generate from commits |
 | `/docs-keeper version patch\|minor\|major` | Bump version |
 | `/docs-keeper adr "Title"` | Create ADR |
 | `/docs-keeper rollback-point` | Mark safe state |
-| `/docs-keeper status` | Project overview |
 | `/docs-keeper impact "project@version"` | Analyze change impact |
-| `/docs-keeper validate` | Check docs completeness |
+| `/docs-keeper validate` | Full validation (existence + format + completeness) |
+
+### Command Details
+
+**`/docs-keeper init`**
+```
+1. Ask user for project details
+2. Create all required documents with templates
+3. Initialize .docs-keeper.json
+4. Report created files
+```
+
+**`/docs-keeper status`**
+```
+1. Scan for all required documents
+2. Check each exists and is valid
+3. Report status (✅ exists, ⚠️ outdated, ❌ missing)
+4. Suggest fixes
+```
+
+**`/docs-keeper fix`**
+```
+1. Identify missing documents
+2. Create each with appropriate template
+3. Report created files
+4. No user prompts (auto-fix mode)
+```
+
+**`/docs-keeper validate`**
+```
+1. Check existence (all required docs)
+2. Check format (valid markdown, JSON)
+3. Check completeness (no empty sections)
+4. Check consistency (VERSION matches tags)
+5. Report all issues
+```
 
 ---
 

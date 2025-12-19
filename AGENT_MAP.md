@@ -42,6 +42,7 @@
 
 | Core Skills |
 |-------------|
+| Document lifecycle (check, create, populate) |
 | Project registry (multi-project) |
 | Changelog generation (conventional commits) |
 | Semantic versioning & release tags |
@@ -277,7 +278,7 @@
 | Agent | Domain | Skills |
 |-------|--------|--------|
 | `/nora` | Orchestration | 7 |
-| `/docs-keeper` | Documentation hub | 8 |
+| `/docs-keeper` | Documentation hub | 9 |
 | `/backend-team` | Backend coordination | 4 |
 | `/frontend-team` | Frontend coordination | 3 |
 | `/db-architect` | PostgreSQL | 7 |
@@ -294,7 +295,7 @@
 | `/monitor` | Observability | 6 |
 | `/security` | Auth/security | 7 |
 | `/debugger` | Troubleshooting | 6 |
-| **Total** | **18 agents** | **116** |
+| **Total** | **18 agents** | **117** |
 
 ---
 
