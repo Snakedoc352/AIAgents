@@ -1,16 +1,23 @@
 # AI Agent Hierarchy & Core Skills
 
 ```
-                              NORA
-                        (Super Orchestrator)
-                               │
-              ┌────────────────┴────────────────┐
-              │                                 │
-       /backend-team                     /frontend-team
-              │                                 │
-    ┌────┬────┼────┬────┐              ┌───────┼───────┐
-    │    │    │    │    │              │       │       │
+                              NORA ─────────────────────┐
+                        (Super Orchestrator)            │
+                               │                        │
+              ┌────────────────┴────────────────┐       │
+              │                                 │       │
+       /backend-team ───────────────────► /frontend-team
+              │                                 │       │
+    ┌────┬────┼────┬────┐              ┌───────┼───────┐│
+    │    │    │    │    │              │       │       ││
    DB   API  RT  Infra  tic           UI    Data    Build
+    │    │    │    │    │              │       │       ││
+    └────┴────┴────┴────┴──────────────┴───────┴───────┴┘
+                               │
+                               ▼
+                        /docs-keeper
+                    (Documentation Hub)
+                    Receives from ALL agents
 ```
 
 ---
@@ -29,6 +36,20 @@
 | Context preservation across handoffs |
 | Progress tracking |
 | Risk assessment & escalation |
+
+### `/docs-keeper`
+**Role:** Central documentation hub, changelog, versioning, ADRs
+
+| Core Skills |
+|-------------|
+| Project registry (multi-project) |
+| Changelog generation (conventional commits) |
+| Semantic versioning & release tags |
+| ADR management (decisions & reasoning) |
+| Rollback point documentation |
+| Git integration (tags, releases) |
+| Event routing (all agents → docs) |
+| Change impact analysis |
 
 ---
 
@@ -256,6 +277,7 @@
 | Agent | Domain | Skills |
 |-------|--------|--------|
 | `/nora` | Orchestration | 7 |
+| `/docs-keeper` | Documentation hub | 8 |
 | `/backend-team` | Backend coordination | 4 |
 | `/frontend-team` | Frontend coordination | 3 |
 | `/db-architect` | PostgreSQL | 7 |
@@ -272,7 +294,7 @@
 | `/monitor` | Observability | 6 |
 | `/security` | Auth/security | 7 |
 | `/debugger` | Troubleshooting | 6 |
-| **Total** | | **108** |
+| **Total** | **18 agents** | **116** |
 
 ---
 
@@ -281,6 +303,11 @@
 ```bash
 # Orchestrator
 ask nora "Build a real-time portfolio tracker"
+
+# Documentation
+/docs-keeper init
+/docs-keeper changelog
+/docs-keeper adr "Use WebSocket for realtime"
 
 # Teams
 /backend-team "Add positions table with RLS"
