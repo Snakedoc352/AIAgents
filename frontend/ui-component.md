@@ -1288,3 +1288,794 @@ const PriceDisplay: Component<{ value: number; change: number }> = (props) => (
   </div>
 );
 ```
+
+---
+
+## Internationalization (i18n)
+
+### Setup (@solid-primitives/i18n)
+```bash
+npm install @solid-primitives/i18n
+```
+
+### Translation Structure
+```typescript
+// locales/en.ts
+export const en = {
+  common: {
+    save: "Save",
+    cancel: "Cancel",
+    delete: "Delete",
+    loading: "Loading...",
+    error: "An error occurred",
+  },
+  positions: {
+    title: "Positions",
+    empty: "No positions found",
+    add: "Add Position",
+    symbol: "Symbol",
+    quantity: "Quantity",
+    profit: "Profit",
+    loss: "Loss",
+  },
+  validation: {
+    required: "This field is required",
+    invalidEmail: "Invalid email address",
+    minLength: "Must be at least {{min}} characters",
+  },
+};
+
+// locales/es.ts
+export const es = {
+  common: {
+    save: "Guardar",
+    cancel: "Cancelar",
+    delete: "Eliminar",
+    loading: "Cargando...",
+    error: "Ocurrió un error",
+  },
+  positions: {
+    title: "Posiciones",
+    empty: "No se encontraron posiciones",
+    add: "Añadir Posición",
+    symbol: "Símbolo",
+    quantity: "Cantidad",
+    profit: "Ganancia",
+    loss: "Pérdida",
+  },
+  validation: {
+    required: "Este campo es obligatorio",
+    invalidEmail: "Dirección de correo inválida",
+    minLength: "Debe tener al menos {{min}} caracteres",
+  },
+};
+```
+
+### i18n Context
+```typescript
+import { createContext, useContext, ParentComponent } from "solid-js";
+import { createI18nContext, I18nContext } from "@solid-primitives/i18n";
+import { en } from "./locales/en";
+import { es } from "./locales/es";
+
+type Locale = "en" | "es";
+
+const dictionaries = { en, es };
+
+export const I18nProvider: ParentComponent = (props) => {
+  const savedLocale = localStorage.getItem("locale") as Locale | null;
+  const browserLocale = navigator.language.split("-")[0] as Locale;
+  const initialLocale = savedLocale ?? (browserLocale in dictionaries ? browserLocale : "en");
+
+  const value = createI18nContext(dictionaries, initialLocale);
+
+  return (
+    <I18nContext.Provider value={value}>
+      {props.children}
+    </I18nContext.Provider>
+  );
+};
+
+export const useI18n = () => useContext(I18nContext)!;
+```
+
+### Translation Hook Usage
+```typescript
+const PositionsList: Component = () => {
+  const [t, { locale, setLocale }] = useI18n();
+
+  return (
+    <div>
+      <h1>{t("positions.title")}</h1>
+
+      <Show when={positions().length === 0}>
+        <p>{t("positions.empty")}</p>
+      </Show>
+
+      <button onClick={() => openModal()}>
+        {t("positions.add")}
+      </button>
+
+      {/* Language switcher */}
+      <select value={locale()} onChange={(e) => setLocale(e.currentTarget.value as Locale)}>
+        <option value="en">English</option>
+        <option value="es">Español</option>
+      </select>
+    </div>
+  );
+};
+```
+
+### Interpolation & Pluralization
+```typescript
+// Translation with variables
+const translations = {
+  greeting: "Hello, {{name}}!",
+  items: "{{count}} item",
+  items_plural: "{{count}} items",
+  lastUpdated: "Last updated {{time}} ago",
+};
+
+// Usage
+t("greeting", { name: user.name });
+t("items", { count: 5 }); // "5 items" (auto-plural)
+t("lastUpdated", { time: formatRelative(date) });
+```
+
+### Number & Date Formatting
+```typescript
+const useFormatters = () => {
+  const [, { locale }] = useI18n();
+
+  const formatNumber = (value: number, options?: Intl.NumberFormatOptions) => {
+    return new Intl.NumberFormat(locale(), options).format(value);
+  };
+
+  const formatCurrency = (value: number, currency = "USD") => {
+    return new Intl.NumberFormat(locale(), {
+      style: "currency",
+      currency,
+    }).format(value);
+  };
+
+  const formatDate = (date: Date, options?: Intl.DateTimeFormatOptions) => {
+    return new Intl.DateTimeFormat(locale(), options).format(date);
+  };
+
+  const formatPercent = (value: number) => {
+    return new Intl.NumberFormat(locale(), {
+      style: "percent",
+      minimumFractionDigits: 2,
+    }).format(value);
+  };
+
+  return { formatNumber, formatCurrency, formatDate, formatPercent };
+};
+
+// Usage
+const { formatCurrency, formatPercent } = useFormatters();
+<span>{formatCurrency(position.value)}</span>     // "$1,234.56" or "1.234,56 €"
+<span>{formatPercent(position.change)}</span>     // "12.34%" or "12,34 %"
+```
+
+### RTL Support
+```typescript
+const [, { locale }] = useI18n();
+
+const isRTL = () => ["ar", "he", "fa"].includes(locale());
+
+createEffect(() => {
+  document.documentElement.dir = isRTL() ? "rtl" : "ltr";
+  document.documentElement.lang = locale();
+});
+
+// Component with RTL awareness
+const Navigation: Component = () => (
+  <nav class="flex" classList={{ "flex-row-reverse": isRTL() }}>
+    <A href="/">Home</A>
+    <A href="/positions">Positions</A>
+  </nav>
+);
+
+// Tailwind RTL utilities
+<div class="ml-4 rtl:mr-4 rtl:ml-0">Content</div>
+<div class="text-left rtl:text-right">Text</div>
+```
+
+---
+
+## Accessibility (ARIA)
+
+### ARIA Roles & Attributes
+```typescript
+// Live regions for dynamic content
+const StatusMessage: Component<{ message: string; type: "polite" | "assertive" }> = (props) => (
+  <div
+    role="status"
+    aria-live={props.type}
+    aria-atomic="true"
+    class="sr-only"
+  >
+    {props.message}
+  </div>
+);
+
+// Alert for errors
+const ErrorAlert: Component<{ error: string }> = (props) => (
+  <div role="alert" class="bg-red-100 border-red-500 text-red-700 p-4 rounded">
+    <strong>Error:</strong> {props.error}
+  </div>
+);
+```
+
+### Screen Reader Only Content
+```css
+/* Tailwind @layer or global CSS */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.not-sr-only {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+```
+
+```typescript
+// Icon button with accessible label
+const IconButton: Component<{ icon: JSX.Element; label: string; onClick: () => void }> = (props) => (
+  <button onClick={props.onClick} aria-label={props.label}>
+    {props.icon}
+    <span class="sr-only">{props.label}</span>
+  </button>
+);
+
+// Usage
+<IconButton icon={<TrashIcon />} label="Delete position" onClick={handleDelete} />
+```
+
+### Focus Management
+```typescript
+import { onMount } from "solid-js";
+
+// Auto-focus on mount (modals, dialogs)
+const Modal: Component<{ children: JSX.Element }> = (props) => {
+  let firstFocusableRef: HTMLButtonElement;
+
+  onMount(() => {
+    firstFocusableRef?.focus();
+  });
+
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <h2 id="modal-title">Modal Title</h2>
+      <button ref={firstFocusableRef!}>First Action</button>
+      {props.children}
+    </div>
+  );
+};
+
+// Focus trap for modals
+const useFocusTrap = (containerRef: () => HTMLElement | undefined) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key !== "Tab") return;
+
+    const container = containerRef();
+    if (!container) return;
+
+    const focusable = container.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
+  onMount(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  });
+};
+```
+
+### Keyboard Navigation
+```typescript
+// Roving tabindex for lists/menus
+const MenuList: Component<{ items: MenuItem[] }> = (props) => {
+  const [activeIndex, setActiveIndex] = createSignal(0);
+  let itemRefs: HTMLButtonElement[] = [];
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setActiveIndex((i) => Math.min(i + 1, props.items.length - 1));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setActiveIndex((i) => Math.max(i - 1, 0));
+        break;
+      case "Home":
+        e.preventDefault();
+        setActiveIndex(0);
+        break;
+      case "End":
+        e.preventDefault();
+        setActiveIndex(props.items.length - 1);
+        break;
+    }
+  };
+
+  createEffect(() => {
+    itemRefs[activeIndex()]?.focus();
+  });
+
+  return (
+    <ul role="menu" onKeyDown={handleKeyDown}>
+      <For each={props.items}>
+        {(item, index) => (
+          <li role="none">
+            <button
+              ref={(el) => (itemRefs[index()] = el)}
+              role="menuitem"
+              tabIndex={index() === activeIndex() ? 0 : -1}
+              onClick={item.onClick}
+            >
+              {item.label}
+            </button>
+          </li>
+        )}
+      </For>
+    </ul>
+  );
+};
+```
+
+### Accessible Forms
+```typescript
+const AccessibleField: Component<{
+  id: string;
+  label: string;
+  error?: string;
+  required?: boolean;
+  hint?: string;
+  children: JSX.Element;
+}> = (props) => {
+  const errorId = () => props.error ? `${props.id}-error` : undefined;
+  const hintId = () => props.hint ? `${props.id}-hint` : undefined;
+  const describedBy = () => [errorId(), hintId()].filter(Boolean).join(" ") || undefined;
+
+  return (
+    <div class="space-y-1">
+      <label for={props.id} class="block text-sm font-medium">
+        {props.label}
+        <Show when={props.required}>
+          <span aria-hidden="true" class="text-red-500 ml-1">*</span>
+          <span class="sr-only">(required)</span>
+        </Show>
+      </label>
+
+      <Show when={props.hint}>
+        <p id={hintId()} class="text-sm text-gray-500">{props.hint}</p>
+      </Show>
+
+      {/* Clone child and add aria attributes */}
+      <div
+        aria-describedby={describedBy()}
+        aria-invalid={props.error ? "true" : undefined}
+        aria-required={props.required}
+      >
+        {props.children}
+      </div>
+
+      <Show when={props.error}>
+        <p id={errorId()} role="alert" class="text-sm text-red-600">
+          {props.error}
+        </p>
+      </Show>
+    </div>
+  );
+};
+```
+
+### Accessible Data Tables
+```typescript
+const AccessibleTable: Component<{ data: Position[]; caption: string }> = (props) => (
+  <table role="grid" aria-label={props.caption}>
+    <caption class="sr-only">{props.caption}</caption>
+    <thead>
+      <tr>
+        <th scope="col">Symbol</th>
+        <th scope="col">Quantity</th>
+        <th scope="col">P/L</th>
+        <th scope="col">
+          <span class="sr-only">Actions</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <For each={props.data}>
+        {(position) => (
+          <tr>
+            <th scope="row">{position.symbol}</th>
+            <td>{position.quantity}</td>
+            <td>
+              <span class={position.pl >= 0 ? "text-green-600" : "text-red-600"}>
+                {position.pl >= 0 ? "+" : ""}{position.pl}
+                <span class="sr-only">
+                  {position.pl >= 0 ? "profit" : "loss"}
+                </span>
+              </span>
+            </td>
+            <td>
+              <button aria-label={`Edit ${position.symbol}`}>Edit</button>
+              <button aria-label={`Delete ${position.symbol}`}>Delete</button>
+            </td>
+          </tr>
+        )}
+      </For>
+    </tbody>
+  </table>
+);
+```
+
+### Skip Links
+```typescript
+const SkipLinks: Component = () => (
+  <div class="sr-only focus-within:not-sr-only">
+    <a
+      href="#main-content"
+      class="absolute top-2 left-2 z-50 bg-white px-4 py-2 rounded shadow-lg focus:outline-none focus:ring-2"
+    >
+      Skip to main content
+    </a>
+    <a
+      href="#main-navigation"
+      class="absolute top-2 left-48 z-50 bg-white px-4 py-2 rounded shadow-lg focus:outline-none focus:ring-2"
+    >
+      Skip to navigation
+    </a>
+  </div>
+);
+
+// Usage in layout
+<>
+  <SkipLinks />
+  <nav id="main-navigation">...</nav>
+  <main id="main-content">...</main>
+</>
+```
+
+### Color Contrast & Visual Indicators
+```typescript
+// Don't rely on color alone
+const StatusBadge: Component<{ status: "success" | "error" | "warning" }> = (props) => {
+  const config = {
+    success: { icon: CheckIcon, label: "Success", class: "bg-green-100 text-green-800" },
+    error: { icon: XIcon, label: "Error", class: "bg-red-100 text-red-800" },
+    warning: { icon: AlertIcon, label: "Warning", class: "bg-yellow-100 text-yellow-800" },
+  };
+
+  const { icon: Icon, label, class: className } = config[props.status];
+
+  return (
+    <span class={`inline-flex items-center gap-1 px-2 py-1 rounded ${className}`}>
+      <Icon class="h-4 w-4" aria-hidden="true" />
+      <span>{label}</span>
+    </span>
+  );
+};
+```
+
+---
+
+## Print Styles
+
+### Print-Specific CSS
+```css
+/* styles/print.css */
+@media print {
+  /* Hide non-essential elements */
+  .no-print,
+  nav,
+  footer,
+  .sidebar,
+  button,
+  .modal,
+  .toast-container {
+    display: none !important;
+  }
+
+  /* Reset backgrounds for ink saving */
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Full width layout */
+  body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .container {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+  }
+
+  /* Page breaks */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .avoid-break {
+    page-break-inside: avoid;
+  }
+
+  /* Keep headings with content */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+
+  /* Keep tables together */
+  table, figure, img {
+    page-break-inside: avoid;
+  }
+
+  /* Show link URLs */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  /* Print-specific header */
+  .print-header {
+    display: block !important;
+  }
+}
+```
+
+### Tailwind Print Utilities
+```javascript
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      screens: {
+        print: { raw: "print" },
+      },
+    },
+  },
+};
+```
+
+```typescript
+// Usage in components
+const ReportHeader: Component = () => (
+  <div class="hidden print:block mb-8">
+    <h1 class="text-2xl font-bold">Portfolio Report</h1>
+    <p class="text-gray-600">Generated: {new Date().toLocaleDateString()}</p>
+  </div>
+);
+
+const ActionButtons: Component = () => (
+  <div class="flex gap-2 print:hidden">
+    <button>Edit</button>
+    <button>Delete</button>
+  </div>
+);
+```
+
+### Print Preview Component
+```typescript
+const PrintPreview: Component<{ children: JSX.Element }> = (props) => {
+  const [isPrintPreview, setIsPrintPreview] = createSignal(false);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div>
+      <div class="print:hidden mb-4 flex gap-2">
+        <button
+          onClick={() => setIsPrintPreview(!isPrintPreview())}
+          class="px-4 py-2 border rounded"
+        >
+          {isPrintPreview() ? "Exit Preview" : "Print Preview"}
+        </button>
+        <button onClick={handlePrint} class="px-4 py-2 bg-blue-500 text-white rounded">
+          Print
+        </button>
+      </div>
+
+      <div
+        classList={{
+          "border-2 border-dashed border-gray-300 p-8 bg-white shadow-lg": isPrintPreview(),
+          "max-w-[8.5in] mx-auto": isPrintPreview(),
+        }}
+      >
+        {props.children}
+      </div>
+    </div>
+  );
+};
+```
+
+### Printable Report Template
+```typescript
+const PortfolioReport: Component<{ positions: Position[] }> = (props) => {
+  const totals = createMemo(() => ({
+    value: props.positions.reduce((sum, p) => sum + p.value, 0),
+    pl: props.positions.reduce((sum, p) => sum + p.pl, 0),
+  }));
+
+  return (
+    <div class="print:text-black">
+      {/* Print-only header */}
+      <header class="hidden print:block border-b pb-4 mb-6">
+        <div class="flex justify-between items-start">
+          <div>
+            <h1 class="text-2xl font-bold">Portfolio Report</h1>
+            <p>Account: Trading Account #12345</p>
+          </div>
+          <div class="text-right">
+            <p>Generated: {new Date().toLocaleString()}</p>
+            <p>Page 1 of 1</p>
+          </div>
+        </div>
+      </header>
+
+      {/* Summary section */}
+      <section class="mb-8 avoid-break">
+        <h2 class="text-xl font-semibold mb-4">Summary</h2>
+        <div class="grid grid-cols-2 gap-4 print:grid-cols-4">
+          <div class="p-4 border rounded print:border-gray-400">
+            <p class="text-sm text-gray-600">Total Value</p>
+            <p class="text-2xl font-bold">${totals().value.toFixed(2)}</p>
+          </div>
+          <div class="p-4 border rounded print:border-gray-400">
+            <p class="text-sm text-gray-600">Total P/L</p>
+            <p class={`text-2xl font-bold ${totals().pl >= 0 ? "text-green-600 print:text-black" : "text-red-600 print:text-black"}`}>
+              {totals().pl >= 0 ? "+" : ""}{totals().pl.toFixed(2)}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Positions table */}
+      <section class="avoid-break">
+        <h2 class="text-xl font-semibold mb-4">Positions</h2>
+        <table class="w-full border-collapse">
+          <thead>
+            <tr class="border-b-2 border-gray-400">
+              <th class="text-left py-2">Symbol</th>
+              <th class="text-right py-2">Quantity</th>
+              <th class="text-right py-2">Entry</th>
+              <th class="text-right py-2">Current</th>
+              <th class="text-right py-2">P/L</th>
+            </tr>
+          </thead>
+          <tbody>
+            <For each={props.positions}>
+              {(position) => (
+                <tr class="border-b border-gray-200">
+                  <td class="py-2 font-medium">{position.symbol}</td>
+                  <td class="py-2 text-right">{position.quantity}</td>
+                  <td class="py-2 text-right">${position.entryPrice.toFixed(2)}</td>
+                  <td class="py-2 text-right">${position.currentPrice.toFixed(2)}</td>
+                  <td class={`py-2 text-right ${position.pl >= 0 ? "text-green-600 print:text-black" : "text-red-600 print:text-black"}`}>
+                    {position.pl >= 0 ? "+" : ""}{position.pl.toFixed(2)}
+                  </td>
+                </tr>
+              )}
+            </For>
+          </tbody>
+          <tfoot>
+            <tr class="border-t-2 border-gray-400 font-bold">
+              <td class="py-2" colspan="4">Total</td>
+              <td class="py-2 text-right">{totals().pl >= 0 ? "+" : ""}{totals().pl.toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+
+      {/* Print-only footer */}
+      <footer class="hidden print:block mt-8 pt-4 border-t text-sm text-gray-600">
+        <p>This report is for informational purposes only. Past performance does not guarantee future results.</p>
+        <p class="mt-2">© 2025 Trading Platform. All rights reserved.</p>
+      </footer>
+    </div>
+  );
+};
+```
+
+### Print Page Setup
+```css
+@media print {
+  @page {
+    size: letter portrait;
+    margin: 0.75in;
+  }
+
+  @page :first {
+    margin-top: 1in;
+  }
+
+  /* Landscape for wide tables */
+  .print-landscape {
+    page: landscape;
+  }
+
+  @page landscape {
+    size: letter landscape;
+  }
+}
+```
+
+### Print-Friendly Charts
+```typescript
+// Replace interactive charts with static versions for print
+const ChartWithPrintFallback: Component<{ data: ChartData[] }> = (props) => {
+  return (
+    <>
+      {/* Interactive chart - hidden on print */}
+      <div class="print:hidden">
+        <InteractiveChart data={props.data} />
+      </div>
+
+      {/* Static table fallback - shown on print */}
+      <div class="hidden print:block">
+        <table class="w-full text-sm">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <For each={props.data}>
+              {(point) => (
+                <tr>
+                  <td>{point.date}</td>
+                  <td>${point.value.toFixed(2)}</td>
+                </tr>
+              )}
+            </For>
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+};
+```

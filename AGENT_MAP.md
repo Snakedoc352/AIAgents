@@ -36,6 +36,9 @@
 | Context preservation across handoffs |
 | Progress tracking |
 | Risk assessment & escalation |
+| Decision memory & pattern learning |
+| Resource estimation & complexity scoring |
+| Failure pattern recognition & prevention |
 
 ### `/docs-keeper`
 **Role:** Central documentation hub, changelog, versioning, ADRs
@@ -89,6 +92,10 @@
 | Temporal data patterns |
 | Multi-tenancy & RLS |
 | TypeScript type generation |
+| Table partitioning (range, list, hash) |
+| Data archival & retention policies |
+| Connection pooling (PgBouncer) |
+| Backup & restore (pg_dump, PITR) |
 
 #### `/query-optimizer`
 **Domain:** SQL performance, indexing
@@ -192,6 +199,9 @@
 | Modal/dialog patterns |
 | Component testing (Vitest) |
 | Theme/dark mode |
+| Internationalization (i18n, RTL, formatting) |
+| Accessibility (ARIA, focus management, keyboard nav) |
+| Print styles & print-friendly layouts |
 
 #### `/data-integration`
 **Domain:** State management, data fetching
@@ -204,6 +214,8 @@
 | Offline support (IndexedDB) |
 | Optimistic updates & rollback |
 | WebSocket integration |
+| State persistence (localStorage, sessionStorage, URL) |
+| Optimistic concurrency (versioning, conflict resolution) |
 
 #### `/build-tooling`
 **Domain:** Vite, bundling, optimization
@@ -233,6 +245,10 @@
 | Zero-downtime deploys |
 | Rollback & version management |
 | Preview environments |
+| Blue-green deployment |
+| Canary releases & gradual rollout |
+| Feature flags (database-backed, percentage rollout) |
+| Infrastructure as Code (Terraform, Pulumi) |
 
 #### `/monitor`
 **Domain:** Observability, alerting
@@ -245,6 +261,10 @@
 | Distributed tracing |
 | APM & performance |
 | SLA & error budgets |
+| Synthetic monitoring & health checks |
+| Cost monitoring & budget alerts |
+| Anomaly detection (statistical, pattern-based) |
+| Session tracking & analytics |
 
 #### `/security`
 **Domain:** Auth, authorization, encryption
@@ -258,6 +278,10 @@
 | Security headers (CORS, CSP, HSTS) |
 | API security & rate limiting |
 | OWASP vulnerability audit |
+| Secrets management (Vault, env vars, rotation) |
+| Incident response playbooks |
+| Compliance patterns (GDPR, SOC2, audit logging) |
+| Security audit automation (CodeQL, Semgrep, Snyk) |
 
 #### `/debugger`
 **Domain:** Troubleshooting, root cause analysis
@@ -270,6 +294,10 @@
 | Network debugging |
 | Database issue resolution |
 | 5 Whys root cause analysis |
+| Memory profiling (heap snapshots, leak detection) |
+| CPU profiling (flame graphs, clinic.js) |
+| Distributed tracing (OpenTelemetry, Jaeger) |
+| Chaos engineering (failure injection, gameday) |
 
 ---
 
@@ -277,25 +305,25 @@
 
 | Agent | Domain | Skills |
 |-------|--------|--------|
-| `/nora` | Orchestration | 7 |
+| `/nora` | Orchestration | 10 |
 | `/docs-keeper` | Documentation hub | 9 |
 | `/backend-team` | Backend coordination | 4 |
 | `/frontend-team` | Frontend coordination | 3 |
-| `/db-architect` | PostgreSQL | 7 |
+| `/db-architect` | PostgreSQL | 11 |
 | `/query-optimizer` | SQL performance | 5 |
 | `/api-data` | API contracts | 5 |
 | `/api-backend` | Fastify/Node | 9 |
 | `/edge-functions` | Deno/Supabase | 5 |
 | `/websocket` | Realtime | 9 |
 | `/data-streams` | Data processing | 4 |
-| `/ui-component` | SolidJS/UI | 12 |
-| `/data-integration` | State/fetching | 6 |
+| `/ui-component` | SolidJS/UI | 15 |
+| `/data-integration` | State/fetching | 8 |
 | `/build-tooling` | Vite/bundling | 6 |
-| `/deployment` | CI/CD/infra | 7 |
-| `/monitor` | Observability | 6 |
-| `/security` | Auth/security | 7 |
-| `/debugger` | Troubleshooting | 6 |
-| **Total** | **18 agents** | **117** |
+| `/deployment` | CI/CD/infra | 11 |
+| `/monitor` | Observability | 10 |
+| `/security` | Auth/security | 11 |
+| `/debugger` | Troubleshooting | 10 |
+| **Total** | **18 agents** | **145** |
 
 ---
 

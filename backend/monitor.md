@@ -257,3 +257,439 @@ Monthly checks:
 2. Identified issues
 3. Optimization recommendations
 4. Monitoring/alerting setup
+
+---
+
+## Synthetic Monitoring
+
+### Concept
+```
+Synthetic monitoring = Automated tests that simulate user behavior
+- Run from multiple locations
+- Execute at regular intervals
+- Alert before users notice
+```
+
+### Health Check Endpoints
+```typescript
+// Multi-level health checks
+fastify.get("/health", async () => ({ status: "ok" })); // Basic
+
+fastify.get("/health/ready", async () => {
+  const checks = {
+    database: await checkDatabase(),
+    cache: await checkRedis(),
+    external_api: await checkExternalApi(),
+  };
+
+  const healthy = Object.values(checks).every((c) => c.status === "ok");
+  return { status: healthy ? "ready" : "degraded", checks };
+});
+
+fastify.get("/health/live", async () => {
+  // Just verify app is running
+  return { status: "alive", uptime: process.uptime() };
+});
+```
+
+### Synthetic Test Script
+```typescript
+// scripts/synthetic-monitor.ts
+const CHECKS = [
+  { name: "Homepage", url: "/", expectedStatus: 200 },
+  { name: "API Health", url: "/api/health", expectedStatus: 200 },
+  { name: "Auth Flow", url: "/auth/login", expectedStatus: 200 },
+  { name: "Dashboard", url: "/dashboard", expectedStatus: 200, requiresAuth: true },
+];
+
+async function runChecks() {
+  const results = [];
+
+  for (const check of CHECKS) {
+    const start = Date.now();
+    try {
+      const response = await fetch(BASE_URL + check.url, {
+        headers: check.requiresAuth ? { Authorization: `Bearer ${TOKEN}` } : {},
+      });
+
+      results.push({
+        name: check.name,
+        status: response.status === check.expectedStatus ? "pass" : "fail",
+        latency: Date.now() - start,
+        statusCode: response.status,
+      });
+    } catch (error) {
+      results.push({
+        name: check.name,
+        status: "error",
+        error: error.message,
+      });
+    }
+  }
+
+  return results;
+}
+
+// Run every 5 minutes
+setInterval(async () => {
+  const results = await runChecks();
+  const failures = results.filter((r) => r.status !== "pass");
+
+  if (failures.length > 0) {
+    await sendAlert("Synthetic check failures", failures);
+  }
+
+  await recordMetrics(results);
+}, 5 * 60 * 1000);
+```
+
+### External Monitoring Services
+```yaml
+# Better Uptime, Pingdom, or UptimeRobot config
+monitors:
+  - name: API Health
+    url: https://api.myapp.com/health
+    interval: 60
+    timeout: 10
+    alert_channels: [slack, pagerduty]
+
+  - name: Homepage
+    url: https://myapp.com
+    interval: 60
+    keyword: "Dashboard"  # Must contain this text
+
+  - name: Login Flow
+    type: transaction
+    steps:
+      - visit: /login
+      - fill: [email, "test@example.com"]
+      - fill: [password, "testpass"]
+      - click: button[type=submit]
+      - assert: url contains /dashboard
+```
+
+---
+
+## Cost Monitoring
+
+### Cloud Cost Tracking
+```typescript
+// Track usage metrics that affect billing
+interface UsageMetrics {
+  database: {
+    storageGb: number;
+    bandwidthGb: number;
+    connections: number;
+  };
+  api: {
+    requests: number;
+    bandwidthGb: number;
+  };
+  storage: {
+    filesCount: number;
+    totalGb: number;
+  };
+}
+
+async function collectUsageMetrics(): Promise<UsageMetrics> {
+  const [dbStats, apiStats, storageStats] = await Promise.all([
+    supabase.rpc("get_database_stats"),
+    getApiUsageFromLogs(),
+    supabase.storage.from("files").list(),
+  ]);
+
+  return {
+    database: {
+      storageGb: dbStats.storage_bytes / 1e9,
+      bandwidthGb: dbStats.bandwidth_bytes / 1e9,
+      connections: dbStats.active_connections,
+    },
+    api: {
+      requests: apiStats.total_requests,
+      bandwidthGb: apiStats.bytes_out / 1e9,
+    },
+    storage: {
+      filesCount: storageStats.length,
+      totalGb: storageStats.reduce((sum, f) => sum + f.metadata.size, 0) / 1e9,
+    },
+  };
+}
+```
+
+### Budget Alerts
+```typescript
+const BUDGET_LIMITS = {
+  database_storage_gb: 5,
+  api_requests_monthly: 1_000_000,
+  storage_gb: 10,
+};
+
+async function checkBudget() {
+  const usage = await collectUsageMetrics();
+  const alerts = [];
+
+  if (usage.database.storageGb > BUDGET_LIMITS.database_storage_gb * 0.8) {
+    alerts.push({
+      type: "warning",
+      message: `Database storage at ${Math.round(usage.database.storageGb / BUDGET_LIMITS.database_storage_gb * 100)}% of limit`,
+    });
+  }
+
+  // Check other limits...
+
+  if (alerts.length > 0) {
+    await sendSlackNotification("#billing-alerts", alerts);
+  }
+}
+```
+
+### Cost Optimization Queries
+```sql
+-- Find unused indexes (wasting storage)
+select indexname, idx_scan, pg_size_pretty(pg_relation_size(indexrelid))
+from pg_stat_user_indexes
+where idx_scan = 0 and indexrelname not like '%_pkey'
+order by pg_relation_size(indexrelid) desc;
+
+-- Find bloated tables (need VACUUM)
+select tablename,
+       pg_size_pretty(pg_total_relation_size(tablename::regclass)) as total,
+       n_dead_tup as dead_rows
+from pg_stat_user_tables
+where n_dead_tup > 10000
+order by n_dead_tup desc;
+
+-- Storage by table
+select tablename,
+       pg_size_pretty(pg_total_relation_size(tablename::regclass)) as size
+from pg_tables
+where schemaname = 'public'
+order by pg_total_relation_size(tablename::regclass) desc;
+```
+
+---
+
+## Anomaly Detection
+
+### Statistical Anomaly Detection
+```typescript
+interface MetricHistory {
+  timestamp: Date;
+  value: number;
+}
+
+function detectAnomaly(
+  current: number,
+  history: MetricHistory[],
+  stdDevThreshold = 3
+): { isAnomaly: boolean; zscore: number } {
+  const values = history.map((h) => h.value);
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const stdDev = Math.sqrt(
+    values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length
+  );
+
+  const zscore = (current - mean) / stdDev;
+
+  return {
+    isAnomaly: Math.abs(zscore) > stdDevThreshold,
+    zscore,
+  };
+}
+
+// Usage
+const recentLatency = await getAverageLatency("1h");
+const historicalLatency = await getLatencyHistory("7d");
+const { isAnomaly, zscore } = detectAnomaly(recentLatency, historicalLatency);
+
+if (isAnomaly) {
+  await alert(`Latency anomaly detected: ${zscore.toFixed(2)} std devs from normal`);
+}
+```
+
+### Pattern-Based Detection
+```typescript
+const ANOMALY_RULES = [
+  {
+    name: "Error spike",
+    metric: "error_rate",
+    condition: (current: number, baseline: number) => current > baseline * 3,
+    severity: "critical",
+  },
+  {
+    name: "Slow queries",
+    metric: "avg_query_time_ms",
+    condition: (current: number, baseline: number) => current > baseline * 2,
+    severity: "warning",
+  },
+  {
+    name: "Connection exhaustion",
+    metric: "db_connections",
+    condition: (current: number, max: number) => current > max * 0.9,
+    severity: "critical",
+  },
+  {
+    name: "Memory pressure",
+    metric: "memory_usage_percent",
+    condition: (current: number) => current > 85,
+    severity: "warning",
+  },
+];
+
+async function checkAnomalies() {
+  const metrics = await getCurrentMetrics();
+  const baselines = await getBaselines();
+
+  for (const rule of ANOMALY_RULES) {
+    const current = metrics[rule.metric];
+    const baseline = baselines[rule.metric];
+
+    if (rule.condition(current, baseline)) {
+      await createAlert({
+        name: rule.name,
+        severity: rule.severity,
+        current,
+        baseline,
+      });
+    }
+  }
+}
+```
+
+### Time-Series Anomalies
+```sql
+-- Detect unusual traffic patterns
+with hourly_traffic as (
+  select date_trunc('hour', created_at) as hour,
+         count(*) as requests
+  from api_logs
+  where created_at > now() - interval '7 days'
+  group by 1
+),
+stats as (
+  select avg(requests) as avg_requests,
+         stddev(requests) as stddev_requests
+  from hourly_traffic
+  where hour < now() - interval '1 day'  -- Baseline excluding recent
+)
+select ht.hour, ht.requests,
+       (ht.requests - s.avg_requests) / s.stddev_requests as zscore
+from hourly_traffic ht, stats s
+where ht.hour > now() - interval '1 day'
+  and abs((ht.requests - s.avg_requests) / s.stddev_requests) > 3;
+```
+
+---
+
+## Session Tracking
+
+### User Session Recording
+```typescript
+// Session tracking middleware
+interface SessionEvent {
+  sessionId: string;
+  userId?: string;
+  event: string;
+  path: string;
+  timestamp: Date;
+  metadata?: Record<string, unknown>;
+}
+
+const trackSession = async (event: SessionEvent) => {
+  await supabase.from("session_events").insert(event);
+};
+
+// Track page views
+fastify.addHook("onRequest", async (request) => {
+  await trackSession({
+    sessionId: request.cookies.session_id || generateSessionId(),
+    userId: request.user?.id,
+    event: "page_view",
+    path: request.url,
+    timestamp: new Date(),
+    metadata: {
+      userAgent: request.headers["user-agent"],
+      referrer: request.headers.referer,
+    },
+  });
+});
+```
+
+### Session Analytics
+```sql
+-- Active sessions
+select count(distinct session_id) as active_sessions
+from session_events
+where timestamp > now() - interval '15 minutes';
+
+-- Session duration
+with sessions as (
+  select session_id,
+         min(timestamp) as session_start,
+         max(timestamp) as session_end
+  from session_events
+  group by session_id
+)
+select avg(session_end - session_start) as avg_duration,
+       percentile_cont(0.5) within group (order by session_end - session_start) as median_duration
+from sessions;
+
+-- User journeys
+select session_id,
+       array_agg(path order by timestamp) as journey
+from session_events
+where timestamp > now() - interval '1 day'
+group by session_id
+limit 100;
+
+-- Drop-off analysis
+with funnel as (
+  select session_id,
+         max(case when path = '/' then 1 else 0 end) as visited_home,
+         max(case when path = '/signup' then 1 else 0 end) as visited_signup,
+         max(case when path = '/dashboard' then 1 else 0 end) as completed_signup
+  from session_events
+  where timestamp > now() - interval '7 days'
+  group by session_id
+)
+select count(*) as total_sessions,
+       sum(visited_home) as home_visitors,
+       sum(visited_signup) as signup_page,
+       sum(completed_signup) as completed
+from funnel;
+```
+
+### Error Session Replay
+```typescript
+// Capture error context for debugging
+interface ErrorContext {
+  sessionId: string;
+  userId?: string;
+  error: string;
+  stack: string;
+  recentEvents: SessionEvent[];
+  pageState?: Record<string, unknown>;
+}
+
+async function captureError(error: Error, request: Request) {
+  const sessionId = request.cookies.session_id;
+
+  // Get recent events for this session
+  const { data: recentEvents } = await supabase
+    .from("session_events")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("timestamp", { ascending: false })
+    .limit(20);
+
+  await supabase.from("error_reports").insert({
+    session_id: sessionId,
+    user_id: request.user?.id,
+    error_message: error.message,
+    stack_trace: error.stack,
+    recent_events: recentEvents,
+    url: request.url,
+    timestamp: new Date(),
+  });
+}
+```
